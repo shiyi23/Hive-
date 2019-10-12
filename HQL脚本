@@ -1,0 +1,42 @@
+--第一步：将数据集上传到HDFS上
+
+--第二步：在Hive创建数据库
+
+create database hsy_clickstream;
+
+use hsy_clickstream;
+
+--第三步：创建内部表
+
+CREATE TABLE hsy_wikilogs(
+  previous_id string, 
+  current_id string, 
+  no_occurences int, 
+  previous_title string, 
+  current_title string, 
+  type string)
+ROW FORMAT DELIMITED 
+  FIELDS TERMINATED BY '09' 
+STORED AS textfile; 
+
+--第四步：将数据从HDFS装载到第三步所创建的内部表中
+
+load data inpath '/user/hsy/hive_data/2015_01_en_clickstream.tsv.gz' into table hsy_wikilogs;
+
+
+
+-- 第五步：查询数据
+
+
+--通过创建视图的方法来忽略数据集中前两列没有对本次分析目标价值的页面标识（即previous_id和current_id这两例）
+create view wikilogs_view (no_occurences, previous_title, current_title) 
+as select no_occurences, previous_title, current_title from hsy_wikilogs;
+
+--进行查询
+select * from wikilogs_view
+sort by no_occurences desc;
+
+--基于数据集，我们可以回答“某个链接访问频次最高的wiki页面是什么”这样的问题，例如以下SQL语句：
+select * from wikilogs_view
+where previous_title = 'other-google'
+sort by no_occurences desc;
